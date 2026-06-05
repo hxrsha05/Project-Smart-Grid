@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hardware Input Sample</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+      body { margin: 0; background: #0b1020; color: #e5ecff; }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+      .card { background: #121a33; border: 1px solid #22305d; border-radius: 16px; padding: 16px; }
+      .status { display: inline-flex; padding: 6px 10px; border-radius: 999px; margin-bottom: 16px; }
+      .ok { background: #12351f; color: #86efac; }
+      .bad { background: #4c1d1d; color: #fca5a5; }
+      label { display: block; margin: 10px 0 6px; font-size: 14px; color: #aac0ff; }
+      input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid #2d3d72; background: #0c1328; color: inherit; }
+      button { margin-top: 12px; padding: 10px 14px; border: 0; border-radius: 10px; background: #5b8cff; color: white; font-weight: 600; cursor: pointer; }
+      ul { list-style: none; padding: 0; margin: 0; }
+      li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #22305d; }
+      .muted { color: #9aa7c7; }
+      .value { font-size: 2rem; font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Hardware Input Bridge</h1>
+      <div id="status" class="status bad">Disconnected</div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Latest Reading</h2>
+          <div class="value" id="value">--</div>
+          <div><span class="muted">Device:</span> <span id="deviceId">--</span></div>
+          <div><span class="muted">Type:</span> <span id="kind">--</span></div>
+          <div><span class="muted">Source:</span> <span id="source">--</span></div>
+          <div><span class="muted">Time:</span> <span id="timestamp">--</span></div>
+        </div>
+
+        <div class="card">
+          <h2>Send Reading</h2>
+          <form id="readingForm">
+            <label>Device ID</label>
+            <input name="deviceId" value="demo-device" />
+            <label>Type</label>
+            <input name="kind" value="temperature" />
+            <label>Value</label>
+            <input name="value" type="number" step="0.1" value="27.4" />
+            <label>Unit</label>
+            <input name="unit" value="°C" />
+            <button type="submit">Push to App</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h2>Live History</h2>
+        <ul id="history"></ul>
+      </div>
+    </div>
+    <script src="./utils.js"></script>
+    <script src="./logic.js"></script>
+  </body>
+</html>
