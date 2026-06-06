@@ -280,9 +280,9 @@ export default function DecisionEngine() {
         description: "The current state does not trigger a higher-priority routing rule",
         status: "pending" as const,
         conditions: [
-          `Adjusted solar: ${state.solarEnergy} kW`,
-          `Adjusted wind: ${state.windEnergy} kW`,
-          `Renewable total: ${state.renewableEnergy} kW`,
+          `Adjusted solar: ${state.solarEnergy.toFixed(2)} kW`,
+          `Adjusted wind: ${state.windEnergy.toFixed(2)} kW`,
+          `Renewable total: ${state.renewableEnergy.toFixed(2)} kW`,
         ],
         actions: ["Continue monitoring the adjusted energy state"],
         priority: "low" as const,
@@ -399,7 +399,7 @@ export default function DecisionEngine() {
               <p className="text-sm text-muted-foreground">Renewable Energy</p>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-display font-bold">
-                  {energyState?.renewableEnergy}
+                  {typeof energyState?.renewableEnergy === "number" ? energyState!.renewableEnergy.toFixed(2) : "--"}
                 </span>
                 <span className="text-sm text-muted-foreground">kW</span>
               </div>
