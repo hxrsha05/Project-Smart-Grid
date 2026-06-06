@@ -12,8 +12,6 @@ import Alerts from "@/pages/dashboard/Alerts";
 import Reports from "@/pages/dashboard/Reports";
 import CampusMap from "@/pages/dashboard/CampusMap";
 import ThemeToggle from "@/components/ThemeToggle";
-import AIChat from "@/components/AIChat";
-import { MessageSquare } from "lucide-react";
 import { showPageToast } from "@/components/PageToast";
 
 const NAVIGATION_ITEMS = [
@@ -69,7 +67,6 @@ export default function Dashboard() {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [aiOpen, setAiOpen] = useState(false);
   const lastToastId = useRef<string | null>(null);
 
   const currentPath = location.split("?")[0];
@@ -194,16 +191,6 @@ export default function Dashboard() {
             <h1 className="text-lg font-display font-bold">{activeItem.label}</h1>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <button
-                onClick={() => setAiOpen((s) => !s)}
-                title="AI Chat"
-                aria-label="Open AI chat"
-                className="inline-flex shrink-0 items-center rounded-full border border-border bg-card/95 p-1 shadow-sm transition-transform duration-200 hover:scale-105"
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                  <MessageSquare className="w-4 h-4 text-primary" />
-                </span>
-              </button>
               <div className="w-2" />
             </div>
           </div>
@@ -215,7 +202,6 @@ export default function Dashboard() {
             {renderContent()}
           </div>
         </main>
-        <AIChat open={aiOpen} onClose={() => setAiOpen(false)} />
       </div>
     </div>
   );
