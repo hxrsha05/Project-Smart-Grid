@@ -328,7 +328,7 @@ export default function Predictions() {
                   <span className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.svgColor }} />
                   <span className="text-muted-foreground">{entry.name}</span>
                 </div>
-                <span className="font-medium">{entry.value}h</span>
+                <span className="font-medium">{String(entry.value).padStart(2, "0")}h</span>
               </div>
             ))}
           </div>

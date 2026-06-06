@@ -26,6 +26,8 @@ import {
   getAdjustedPower,
   readPowerAdjustments,
   subscribePowerAdjustments,
+  readBatterySocOverride,
+  subscribeBatterySoc,
 } from "@/lib/powerAdjustments";
 
 type HardwareReading = {
@@ -169,16 +171,18 @@ export default function Overview() {
   const [latestReading, setLatestReading] = useState<HardwareReading | null>(null);
   const [connected, setConnected] = useState(false);
   const [telemetry, setTelemetry] = useState<TelemetryPayload | null>(null);
+  const [batteryOverride, setBatteryOverride] = useState<number | null>(() => readBatterySocOverride());
   const [powerAdjustments, setPowerAdjustments] = useState(readPowerAdjustments());
   const { gridAvailable } = useGrid();
 
   const liveMetrics = useMemo(() => {
     const baseSolar = Number(telemetry?.solar?.p ?? telemetry?.solar?.v ?? SENSOR_BASE_POWER.solar);
     const baseWind = Number(telemetry?.wind?.p ?? telemetry?.wind?.v ?? SENSOR_BASE_POWER.wind);
-    const totalConsumption = Number(telemetry?.ac?.p ?? DEFAULT_METRICS.totalConsumption);
+    const baseDemand = Number(telemetry?.ac?.p ?? DEFAULT_METRICS.totalConsumption);
     const solarPower = getAdjustedPower(baseSolar, powerAdjustments.solarDelta);
     const windPower = getAdjustedPower(baseWind, powerAdjustments.windDelta);
     const renewableGeneration = solarPower + windPower;
+    const totalConsumption = getAdjustedPower(baseDemand, powerAdjustments.demandDelta);
     const batterySOC = Math.max(0, Math.min(100, Math.round(78 + (renewableGeneration - totalConsumption) / 20)));
 
     return {
@@ -189,6 +193,8 @@ export default function Overview() {
       windPower,
     };
   }, [powerAdjustments, telemetry]);
+
+  const batterySOC = batteryOverride ?? liveMetrics.batterySOC;
 
   const solarPower = liveMetrics.solarPower;
   const windPower = liveMetrics.windPower;
@@ -279,6 +285,7 @@ export default function Overview() {
   }, []);
 
   useEffect(() => subscribePowerAdjustments(setPowerAdjustments), []);
+  useEffect(() => subscribeBatterySoc(setBatteryOverride), []);
 
   const KPICard = ({
     icon: Icon,
@@ -347,7 +354,7 @@ export default function Overview() {
         <KPICard
           icon={Battery}
           label="Battery State of Charge"
-          value={metrics?.batterySOC || 0}
+          value={batterySOC}
           unit="%"
           color="bg-[hsl(160_70%_45%)]"
           loading={loading}
@@ -463,7 +470,7 @@ export default function Overview() {
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: source.color }} />
                     <span className="text-muted-foreground">{source.name}</span>
                   </div>
-                  <span className="font-medium">{source.value}%</span>
+                  <span className="font-medium">{String(source.value).padStart(2, "0")}%</span>
                 </div>
               ))}
             </div>

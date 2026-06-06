@@ -4,7 +4,6 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Zap, Menu, X, LogOut, Gauge, Leaf, BatteryCharging, Network, BrainCircuit, FileBarChart } from "lucide-react";
 import Overview from "@/pages/dashboard/Overview";
-import EnergySources from "@/pages/dashboard/EnergySources";
 import BatteryManagement from "@/pages/dashboard/BatteryManagement";
 import GridCoordination from "@/pages/dashboard/GridCoordination";
 import DecisionEngine from "@/pages/dashboard/DecisionEngine";
@@ -19,7 +18,6 @@ import { showPageToast } from "@/components/PageToast";
 
 const NAVIGATION_ITEMS = [
   { id: "overview", label: "Overview", path: "/dashboard/overview" },
-  { id: "energy-sources", label: "Energy Sources", path: "/dashboard/energy-sources" },
   { id: "battery", label: "Battery Management", path: "/dashboard/battery" },
   { id: "grid", label: "Grid Coordination", path: "/dashboard/grid" },
   { id: "engine", label: "Decision Engine", path: "/dashboard/engine" },
@@ -34,12 +32,6 @@ const PAGE_TOASTS: Record<string, { title: string; description: string; icon: Re
     description: "Real-time consumption, renewable generation, and grid flow are being monitored.",
     icon: <Gauge className="h-4 w-4" />,
     accentClassName: "bg-cyan-500",
-  },
-  "energy-sources": {
-    title: "Energy Sources",
-    description: "Solar and wind generation are active with live weather conditions supporting output.",
-    icon: <Leaf className="h-4 w-4" />,
-    accentClassName: "bg-emerald-500",
   },
   battery: {
     title: "Battery Management",
@@ -114,8 +106,6 @@ export default function Dashboard() {
     switch (activeItem.id) {
       case "overview":
         return <Overview />;
-      case "energy-sources":
-        return <EnergySources />;
       case "battery":
         return <BatteryManagement />;
       case "grid":

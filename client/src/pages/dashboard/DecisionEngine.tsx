@@ -3,12 +3,16 @@ import { AlertCircle, CheckCircle, Clock, Wind, Battery, Plug } from "lucide-rea
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
 import { useGrid } from "@/contexts/GridContext";
 import {
   SENSOR_BASE_POWER,
+  readBatterySocOverride,
   getAdjustedPower,
   readPowerAdjustments,
+  subscribeBatterySoc,
   subscribePowerAdjustments,
+  writePowerAdjustments,
 } from "@/lib/powerAdjustments";
 
 interface Decision {
@@ -71,6 +75,8 @@ export default function DecisionEngine() {
   const [energyState, setEnergyState] = useState<EnergyState | null>(null);
   const [hardwareReading, setHardwareReading] = useState<HardwareReading>(DEFAULT_HARDWARE_READING);
   const [telemetry, setTelemetry] = useState<TelemetryPayload | null>(null);
+  const [powerAdjustments, setPowerAdjustments] = useState(readPowerAdjustments());
+  const [batteryOverride, setBatteryOverride] = useState<number | null>(() => readBatterySocOverride());
   const [loading, setLoading] = useState(true);
   const [generated, setGenerated] = useState(false);
   // show the current energy state immediately (use defaults until data arrives)
@@ -78,15 +84,18 @@ export default function DecisionEngine() {
   const { gridAvailable: gridAvailableOverride } = useGrid();
 
   const buildEnergyState = (): EnergyState => {
-    const adjustments = readPowerAdjustments();
+    const adjustments = powerAdjustments;
     const solarBase = Number(telemetry?.solar?.p ?? telemetry?.solar?.v ?? SENSOR_BASE_POWER.solar);
     const windBase = Number(telemetry?.wind?.p ?? telemetry?.wind?.v ?? SENSOR_BASE_POWER.wind);
     const demand = Number(telemetry?.ac?.p ?? DEFAULT_HARDWARE_READING.value);
     const solarEnergy = getAdjustedPower(solarBase, adjustments.solarDelta);
     const windEnergy = getAdjustedPower(windBase, adjustments.windDelta);
-    const derivedBatteryLevel = Math.max(0, Math.min(100, Math.round(78 + (solarEnergy + windEnergy - demand) / 20)));
+    const adjustedDemand = getAdjustedPower(demand, adjustments.demandDelta);
+    const derivedBatteryLevel = Math.max(0, Math.min(100, Math.round(78 + (solarEnergy + windEnergy - adjustedDemand) / 20)));
     const latestKind = hardwareReading.kind.toLowerCase();
-    const batteryLevel = latestKind.includes("battery") || latestKind.includes("soc") ? hardwareReading.value : derivedBatteryLevel;
+    const batteryLevel = batteryOverride ?? (latestKind.includes("battery") || latestKind.includes("soc")
+      ? hardwareReading.value
+      : derivedBatteryLevel);
     const gridAvailableFromHardware = latestKind.includes("grid")
       ? hardwareReading.value >= 0
       : latestKind.includes("outage")
@@ -101,7 +110,7 @@ export default function DecisionEngine() {
       solarDelta: adjustments.solarDelta,
       windDelta: adjustments.windDelta,
       renewableEnergy: solarEnergy + windEnergy,
-      demand,
+      demand: adjustedDemand,
       batteryLevel,
       gridAvailable,
       weather,
@@ -170,6 +179,14 @@ export default function DecisionEngine() {
       window.clearInterval(interval);
     };
   }, []);
+
+  useEffect(() => subscribeBatterySoc(setBatteryOverride), []);
+  useEffect(() => subscribePowerAdjustments(setPowerAdjustments), []);
+
+  const formatAdjustment = (value: number) => {
+    if (value === 0) return "0";
+    return `${value > 0 ? "+" : ""}${value}`;
+  };
 
   const recomputeDecision = (state: EnergyState) => {
     const selectedDecision =
@@ -335,6 +352,22 @@ export default function DecisionEngine() {
               <p className="text-xs text-muted-foreground">
                 Sensor {SENSOR_BASE_POWER.solar} kW{energyState?.solarDelta ? ` · ${energyState.solarDelta > 0 ? "+" : ""}${energyState.solarDelta} kW adjust` : ""}
               </p>
+              <div className="pt-2">
+                <Slider
+                  value={[powerAdjustments.solarDelta]}
+                  min={-2000}
+                  max={2000}
+                  step={10}
+                  onValueChange={([value]) =>
+                    writePowerAdjustments({
+                      ...powerAdjustments,
+                      solarDelta: value ?? 0,
+                    })
+                  }
+                  className="h-6 [&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-track]]:bg-muted [&_[data-slot=slider-range]]:bg-[hsl(38_92%_50%)] [&_[data-slot=slider-thumb]]:border-[hsl(38_92%_50%)]"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Adjust solar: {formatAdjustment(powerAdjustments.solarDelta)} kW</p>
+              </div>
             </div>
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Wind Energy</p>
@@ -345,6 +378,22 @@ export default function DecisionEngine() {
               <p className="text-xs text-muted-foreground">
                 Sensor {SENSOR_BASE_POWER.wind} kW{energyState?.windDelta ? ` · ${energyState.windDelta > 0 ? "+" : ""}${energyState.windDelta} kW adjust` : ""}
               </p>
+              <div className="pt-2">
+                <Slider
+                  value={[powerAdjustments.windDelta]}
+                  min={-1000}
+                  max={1000}
+                  step={5}
+                  onValueChange={([value]) =>
+                    writePowerAdjustments({
+                      ...powerAdjustments,
+                      windDelta: value ?? 0,
+                    })
+                  }
+                  className="h-6 [&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-track]]:bg-muted [&_[data-slot=slider-range]]:bg-[hsl(200_70%_50%)] [&_[data-slot=slider-thumb]]:border-[hsl(200_70%_50%)]"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Adjust wind: {formatAdjustment(powerAdjustments.windDelta)} kW</p>
+              </div>
             </div>
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Renewable Energy</p>
@@ -362,6 +411,22 @@ export default function DecisionEngine() {
                   {energyState?.demand}
                 </span>
                 <span className="text-sm text-muted-foreground">kW</span>
+              </div>
+              <div className="pt-2">
+                <Slider
+                  value={[powerAdjustments.demandDelta]}
+                  min={-2000}
+                  max={2000}
+                  step={10}
+                  onValueChange={([value]) =>
+                    writePowerAdjustments({
+                      ...powerAdjustments,
+                      demandDelta: value ?? 0,
+                    })
+                  }
+                  className="h-6 [&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-track]]:bg-muted [&_[data-slot=slider-range]]:bg-[hsl(24_95%_53%)] [&_[data-slot=slider-thumb]]:border-[hsl(24_95%_53%)]"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Adjust demand: {formatAdjustment(powerAdjustments.demandDelta)} kW</p>
               </div>
             </div>
             <div className="space-y-2">

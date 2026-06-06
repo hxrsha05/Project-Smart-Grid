@@ -4,6 +4,11 @@ import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
+import {
+  readBatterySocOverride,
+  subscribeBatterySoc,
+  writeBatterySocOverride,
+} from "@/lib/powerAdjustments";
 
 interface BatteryData {
   time: string;
@@ -75,7 +80,7 @@ export default function BatteryManagement() {
   const [batteryBanks, setBatteryBanks] = useState<BatteryBank[]>([]);
   const [capacityAdjusted, setCapacityAdjusted] = useState<number>(2400);
   const capacityOriginal = 2400;
-  const [socAdjusted, setSocAdjusted] = useState<number | null>(null);
+  const [socAdjusted, setSocAdjusted] = useState<number | null>(() => readBatterySocOverride());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -94,7 +99,9 @@ export default function BatteryManagement() {
         const snapshot = buildBatterySnapshot(payload.history);
         setChargeData(snapshot.chargeData);
         setBatteryBanks([snapshot.bank]);
-        setSocAdjusted(snapshot.bank.soc);
+        if (readBatterySocOverride() === null) {
+          setSocAdjusted(snapshot.bank.soc);
+        }
       } catch {
         if (!active) return;
         setChargeData([]);
@@ -112,6 +119,8 @@ export default function BatteryManagement() {
       window.clearInterval(timer);
     };
   }, []);
+
+  useEffect(() => subscribeBatterySoc(setSocAdjusted), []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -216,7 +225,11 @@ export default function BatteryManagement() {
                         min={0}
                         max={100}
                         step={1}
-                        onValueChange={([val]) => setSocAdjusted(val ?? bank.soc)}
+                        onValueChange={([val]) => {
+                          const nextSoc = val ?? bank.soc;
+                          setSocAdjusted(nextSoc);
+                          writeBatterySocOverride(nextSoc);
+                        }}
                         className="h-6 [&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-track]]:bg-muted [&_[data-slot=slider-range]]:bg-[hsl(160_70%_45%)] [&_[data-slot=slider-thumb]]:border-[hsl(160_70%_45%)]"
                       />
                     </div>
