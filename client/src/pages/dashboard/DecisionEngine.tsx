@@ -188,6 +188,9 @@ export default function DecisionEngine() {
     return `${value > 0 ? "+" : ""}${value}`;
   };
 
+  const formatTelemetryValue = (value: number | undefined, unit: string) =>
+    typeof value === "number" && Number.isFinite(value) ? `${value.toFixed(2)} ${unit}` : "--";
+
   const recomputeDecision = (state: EnergyState) => {
     const selectedDecision =
       (state.renewableEnergy < state.demand * 0.3 && state.batteryLevel < 20 && !state.gridAvailable && {
@@ -352,6 +355,16 @@ export default function DecisionEngine() {
               <p className="text-xs text-muted-foreground">
                 Sensor {SENSOR_BASE_POWER.solar} kW{energyState?.solarDelta ? ` · ${energyState.solarDelta > 0 ? "+" : ""}${energyState.solarDelta} kW adjust` : ""}
               </p>
+              <div className="space-y-1 rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
+                <div className="flex items-center justify-between gap-3">
+                  <span>Voltage</span>
+                  <span className="font-medium text-foreground">{formatTelemetryValue(telemetry?.solar?.v, "V")}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span>Current</span>
+                  <span className="font-medium text-foreground">{formatTelemetryValue(telemetry?.solar?.c, "mA")}</span>
+                </div>
+              </div>
               <div className="pt-2">
                 <Slider
                   value={[powerAdjustments.solarDelta]}
@@ -378,6 +391,16 @@ export default function DecisionEngine() {
               <p className="text-xs text-muted-foreground">
                 Sensor {SENSOR_BASE_POWER.wind} kW{energyState?.windDelta ? ` · ${energyState.windDelta > 0 ? "+" : ""}${energyState.windDelta} kW adjust` : ""}
               </p>
+              <div className="space-y-1 rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
+                <div className="flex items-center justify-between gap-3">
+                  <span>Voltage</span>
+                  <span className="font-medium text-foreground">{formatTelemetryValue(telemetry?.wind?.v, "V")}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span>Current</span>
+                  <span className="font-medium text-foreground">{formatTelemetryValue(telemetry?.wind?.c, "mA")}</span>
+                </div>
+              </div>
               <div className="pt-2">
                 <Slider
                   value={[powerAdjustments.windDelta]}
@@ -411,6 +434,16 @@ export default function DecisionEngine() {
                   {energyState?.demand}
                 </span>
                 <span className="text-sm text-muted-foreground">kW</span>
+              </div>
+              <div className="space-y-1 rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
+                <div className="flex items-center justify-between gap-3">
+                  <span>Grid Voltage</span>
+                  <span className="font-medium text-foreground">{formatTelemetryValue(telemetry?.ac?.v, "V")}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span>Assumed Load Current</span>
+                  <span className="font-medium text-foreground">{formatTelemetryValue(telemetry?.ac?.c, "A")}</span>
+                </div>
               </div>
               <div className="pt-2">
                 <Slider
